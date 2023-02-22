@@ -1,6 +1,6 @@
 import numpy as np
 import statistics
-import linearInterpolation as interpol
+import interpolate_color as interpol
 
 
 def shade_triangle(img, verts2d, vcolors, shade_t):
