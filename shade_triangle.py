@@ -11,7 +11,6 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
     shade_t: the painting method (flat or gouraud)
     """
     # the value to be returned - the canvas
-    Y = img
 
     global right_color
 
@@ -37,24 +36,17 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
 
     # find the active peaks
     activ_peaks = []
-    activ_acmes = []
     peaks_y_max = []
-    middle_pick = 0
+    middle_peak = []
     for i in range(3):
         # store the active peaks for ymin
         if verts2d[i][1] == ymin:
             activ_peaks.append(verts2d[i])
-            if i not in activ_acmes:
-                activ_acmes.append(i)
-            if ((i-1)%3) not in activ_acmes:
-                activ_acmes.append(i)
         # store the peaks for ymax
         elif verts2d[i][1] == ymax:
             peaks_y_max.append(verts2d[i])
         else:
             middle_peak = verts2d[i]
-
-
 
 
     # _____*****if we are using flat method*****_____
@@ -64,20 +56,21 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
         for i in range(3):
             i_color_palette = [vcolors[0][i], vcolors[1][i], vcolors[2][i]]
             color[i] = statistics.mean(i_color_palette)
+            color = np.array(color)
 
         # if the triangle is a single point
         if (xmin == xmax) and (ymin == ymax):
-            Y[ymin][xmin] = color
+            img[ymin][xmin] = color
 
         # if the triangle is a horizontal line
         elif ymin == ymax:
             for x in range(xmin, xmax+1):
-                Y[ymin][x] = color
+                img[ymin][x] = color
 
         # if the triangle is a vertical line
         elif xmin == xmax:
             for y in range(ymin, ymax+1):
-                Y[y][xmin] = color
+                img[y][xmin] = color
 
         # if the triangle has a lower horizontal edge
         elif len(activ_peaks) == 2:
@@ -87,7 +80,7 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             right_slope = (activ_peaks[1][0] - peaks_y_max[0][0])/(ymin - ymax)
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
-                    Y[y][x] = color
+                    img[y][x] = color
                 xmin = xmin + left_slope
                 xmax = xmax + right_slope
 
@@ -98,57 +91,24 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             right_slope = (peaks_y_max[1][0] - activ_peaks[0][0])/(ymax - ymin)
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
-                    Y[y][x] = color
+                    img[y][x] = color
                 xmin = xmin + left_slope
                 xmax = xmax + right_slope
 
         # if the triangle is just any other triangle
+        # split it in two triangles and call the shade_triangle (itself)
+        # note: we give the same color to each three peaks now because the mean value of the three colors will be the same color again
         else:
-            # if the middle point is from the left side
-            if middle_peak[0] == xmin:
-                slope_left_1 = (xmin - activ_peaks[0][0])/(middle_peak[1] - ymin)
-                slope_left_2 = (peaks_y_max[0][0] - xmin)/(ymax - middle_peak[1])
-                slope_right = (peaks_y_max[0][0] - activ_peaks[0][0])/(ymax - ymin)
-                x_bias_1 = activ_peaks[0][0]
-                # the list of the first scan line
-                activ_peaks.append(activ_peaks[0])
-                for y in range(ymin, int(middle_peak[1])):
-                    for x in range(int(activ_peaks[0][0]), int(activ_peaks[1][0] + 1)):
-                        Y[y][x] = color
-                    new_x_left = x_bias_1 + (y + 1 - ymin) * slope_left_1
-                    new_x_right = x_bias_1 + (y + 1 - ymin) * slope_right
-                    activ_peaks[0] = [new_x_left, y + 1]
-                    activ_peaks[1] = [new_x_right, y + 1]
-                for y in range(int(middle_peak[1]), ymax + 1):
-                    for x in range(int(activ_peaks[0][0]), int(activ_peaks[1][0]) + 1):
-                        Y[y][x] = color
-                    new_x_left = middle_peak[0] + round((y + 1 - ymin) * slope_left_2)
-                    new_x_right = x_bias_1 + round((y + 1 - ymin) * slope_right)
-                    activ_peaks[0] = [new_x_left, y + 1]
-                    activ_peaks[1] = [new_x_right, y + 1]
-
-            # if the middle point is from the right side
-            if middle_peak[0] == xmax:
-                slope_right_1 = (middle_peak[0] - activ_peaks[0][0]) / (middle_peak[1] - ymin)
-                slope_right_2 = (peaks_y_max[0][0] - middle_peak[0]) / (ymax - middle_peak[1])
-                slope_left = (peaks_y_max[0][0] - activ_peaks[0][0]) / (ymax - ymin)
-                x_bias = activ_peaks[0][0]
-                # the list of the first scan line
-                activ_peaks.append(activ_peaks[0])
-                for y in range(ymin, int(middle_peak[1])):
-                    for x in range(int(activ_peaks[0][0]), int(activ_peaks[1][0] + 1)):
-                        Y[y][x] = color
-                    new_x_left = x_bias + (y + 1 - ymin) * slope_left
-                    new_x_right = peaks_y_max[0][1] + (y + 1 - ymin) * slope_right_1
-                    activ_peaks[0] = [new_x_left, y + 1]
-                    activ_peaks[1] = [new_x_right, y + 1]
-                for y in range(int(middle_peak[1]), ymax + 1):
-                    for x in range(int(activ_peaks[0][0]), int(activ_peaks[1][0]) + 1):
-                        Y[y][x] = color
-                    new_x_left = x_bias + (y + 1 - ymin) * slope_left
-                    new_x_right = middle_peak[0] + (y + 1 - ymin) * slope_right_2
-                    activ_peaks[0] = [new_x_left, y + 1]
-                    activ_peaks[1] = [new_x_right, y + 1]
+            slope = (ymax-ymin)/(peaks_y_max[0][0]-activ_peaks[0][0])
+            x_new = peaks_y_max[0][0] + (middle_peak[1] - ymax)/slope
+            colors = np.array([color, color, color])
+            new_peak = [x_new, middle_peak[1]]
+            triangle1 = np.array([peaks_y_max[0], middle_peak, new_peak])
+            triangle2 = np.array([middle_peak, new_peak, activ_peaks[0]])
+            # fill first triangle
+            shade_triangle(img, triangle1, colors, shade_t)
+            # fill second triangle
+            shade_triangle(img, triangle2, colors, shade_t)
 
 
 
@@ -326,4 +286,4 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
         #             activ_peaks_min[0] = [new_x_left, y + 1]
         #             activ_peaks_min[1] = [new_x_right, y + 1]
 
-    return Y
+    return img
