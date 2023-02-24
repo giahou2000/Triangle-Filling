@@ -47,6 +47,7 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             peaks_y_max.append(verts2d[i])
         else:
             middle_peak = verts2d[i]
+            middle_color = vcolors[i]
 
 
     # _____*****if we are using flat method*****_____
@@ -213,8 +214,34 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 xsmall = xsmall + left_slope
                 xbig = xbig + right_slope
 
-        # if the triangle is just a triangle
+        # if the triangle is just any other triangle
+        # split it in two triangles and call the shade_triangle (itself)
+        # note: we compute the interpolation to the cut peaks and give them the result color
         else:
-            a = 1
+            # compute the x at which there will be the cut
+            y_diff = peaks_y_max[0][0] - activ_peaks[0][0]
+            if y_diff == 0:
+                x_new = peaks_y_max[0][0]
+            else:
+                slope = (ymax-ymin)/y_diff
+                x_new = peaks_y_max[0][0] + (middle_peak[1] - ymax)/slope
+            # the new cut peak
+            new_peak = [x_new, middle_peak[1]]
+            # create the new triangles after the cut
+            triangle1 = np.array([peaks_y_max[0], middle_peak, new_peak])
+            triangle2 = np.array([middle_peak, new_peak, activ_peaks[0]])
+            # compute the colors
+            for i in range(3):
+                if (verts2d[i][1] == ymax):
+                    upper_color = vcolors[i]
+                elif (verts2d[i][1] == ymin):
+                    down_color = vcolors[i]
+            new_peak_color = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], new_peak, upper_color, down_color)
+            colors1 = np.array([upper_color, middle_color, new_peak_color])
+            colors2 = np.array([middle_color, new_peak_color, down_color])
+            # fill first triangle
+            shade_triangle(img, triangle1, colors1, shade_t)
+            # fill second triangle
+            shade_triangle(img, triangle2, colors2, shade_t)
 
     return img
