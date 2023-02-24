@@ -34,7 +34,7 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
     xmin = int(min(xkmin))
     xmax = int(max(xkmax))
 
-    # find the active peaks
+    # find the active peaks and keep some more info for later processing
     activ_peaks = []
     peaks_y_max = []
     middle_peak = []
@@ -51,7 +51,7 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
 
     # _____*****if we are using flat method*****_____
     if shade_t == 'flat':
-        # flat coloring
+        # flat coloring for the whole triangle
         color = np.zeros(3)
         for i in range(3):
             i_color_palette = [vcolors[0][i], vcolors[1][i], vcolors[2][i]]
@@ -76,8 +76,10 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
         elif len(activ_peaks) == 2:
             # sort to left and right lower peaks
             activ_peaks.sort(key=lambda ap: ap[0])
+            # compute the 2 slopes of the acmes (inverse slopes to get rid of division by zero)
             left_slope = (peaks_y_max[0][0] - activ_peaks[0][0])/(ymax - ymin)
             right_slope = (activ_peaks[1][0] - peaks_y_max[0][0])/(ymin - ymax)
+            # paint for each point
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
                     img[y][x] = color
@@ -86,9 +88,12 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
 
         # if the triangle has an upper horizontal edge
         elif len(peaks_y_max) == 2:
+            # sort to left and right upper peaks
             peaks_y_max.sort(key=lambda ap: ap[0])
+            # compute the 2 slopes of the acmes (inverse slopes to get rid of division by zero)
             left_slope = (activ_peaks[0][0] - peaks_y_max[0][0])/(ymin - ymax)
             right_slope = (peaks_y_max[1][0] - activ_peaks[0][0])/(ymax - ymin)
+            # paint for each point
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
                     img[y][x] = color
@@ -99,14 +104,17 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
         # split it in two triangles and call the shade_triangle (itself)
         # note: we give the same color to each three peaks now because the mean value of the three colors will be the same color again
         else:
+            # compute the x at which there will be the cut
             y_diff = peaks_y_max[0][0]-activ_peaks[0][0]
             if y_diff == 0:
                 x_new = peaks_y_max[0][0]
             else:
                 slope = (ymax-ymin)/y_diff
                 x_new = peaks_y_max[0][0] + (middle_peak[1] - ymax)/slope
+            # the mean value of the same color is the color itself, so we give each peak the same color
             colors = np.array([color, color, color])
             new_peak = [x_new, middle_peak[1]]
+            # create the new triangles after the cut
             triangle1 = np.array([peaks_y_max[0], middle_peak, new_peak])
             triangle2 = np.array([middle_peak, new_peak, activ_peaks[0]])
             # fill first triangle
@@ -119,175 +127,94 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
 
     # _____*****if we are using gouraud method*****_____
     elif shade_t == 'gouraud':
-        a = 1
-        # # if the triangle is a single point(no point of gouraud method)
-        # if (xmin == xmax) and (ymin == ymax):
-        #     color = np.zeros(3)
-        #     for i in range(3):
-        #         i_color_palette = [vcolors[0][i], vcolors[1][i], vcolors[2][i]]
-        #         color[i] = statistics.mean(i_color_palette)
-        #     Y[ymin][xmin] = color
+        # flat coloring for certain types of triangles
+        color = np.zeros(3)
+        for i in range(3):
+            i_color_palette = [vcolors[0][i], vcolors[1][i], vcolors[2][i]]
+            color[i] = statistics.mean(i_color_palette)
+            color = np.array(color)
 
-        # # if the triangle is a horizontal line
-        # elif ymin == ymax:
-        #     for i in range(3):
-        #         if activ_peaks_min[i][0] == xmin:
-        #             left_color = vcolors[i]
-        #         elif activ_peaks_min[i][0] == xmax:
-        #             right_color = vcolors[i]
-        #     for x in range(xmin, xmax + 1):
-        #         Y[ymin][x] = interpol.interpolate_color(xmin, xmax, x, left_color, right_color)
+        # if the triangle is a single point
+        if (xmin == xmax) and (ymin == ymax):
+            img[ymin][xmin] = color
 
-        # # if the triangle is a vertical line
-        # elif xmin == xmax:
-        #     for i in range(3):
-        #         if verts2d[i][1] == ymax:
-        #             upper_color = vcolors[i]
-        #         elif verts2d[i][1] == ymin:
-        #             lower_color = vcolors[i]
-        #     for y in range(ymin, ymax + 1):
-        #         Y[y][xmin] = interpol.interpolate_color(ymin, ymax, y, lower_color, upper_color)
+        # if the triangle is a horizontal line
+        elif ymin == ymax:
+            for i in range(3):
+                if activ_peaks[i][0] == xmin:
+                    left_color = vcolors[i]
+                elif activ_peaks[i][0] == xmax:
+                    right_color = vcolors[i]
+            activ_peaks.sort(key=lambda ap: ap[0])
+            for x in range(xmin, xmax + 1):
+                img[ymin][x] = interpol.interpolate_color(activ_peaks[0], activ_peaks[2], [x, ymin], left_color, right_color)
 
-        # # if the triangle has a lower horizontal edge
-        # elif len(activ_peaks_min) == 2:
-        #     activ_peaks_min.sort(key=lambda ap: ap[0])
-        #     for i in range(3):
-        #         if verts2d[i][1] == ymax:
-        #             upper_point = verts2d[i]
-        #             upper_color = vcolors[i]
-        #         elif verts2d[i][0] == activ_peaks_min[0][0]:
-        #             left_color = vcolors[i]
-        #         elif verts2d[i][0] == activ_peaks_min[1][0]:
-        #             right_color = vcolors[i]
-        #     left_slope = (upper_point[0] - activ_peaks_min[0][0]) / (upper_point[1] - activ_peaks_min[0][1])
-        #     right_slope = (activ_peaks_min[1][0] - upper_point[0]) / (activ_peaks_min[1][1] - upper_point[1])
-        #     for y in range(ymin, ymax + 1):
-        #         # first interpolation
-        #         left_side_color = interpol.interpolate_color(ymin, ymax, y, left_color, upper_color)
-        #         right_side_color = interpol.interpolate_color(ymin, ymax, y, right_color, upper_color)
-        #         left_x = int(activ_peaks_min[0][0])
-        #         right_x = int(activ_peaks_min[1][0])
-        #         for x in range(left_x, right_x + 1):
-        #             # second interpolation
-        #             Y[y][x] = interpol.interpolate_color(left_x, right_x, x, left_side_color, right_side_color)
-        #         new_left_x = round((y + 1 - ymin) * left_slope)
-        #         new_right_x = round((y + 1 - ymin) * right_slope)
-        #         activ_peaks_min[0] = [new_left_x, y + 1]
-        #         activ_peaks_min[1] = [new_right_x, y + 1]
+        # if the triangle is a vertical line
+        elif xmin == xmax:
+            for i in range(3):
+                if verts2d[i][1] == ymax:
+                    upper_color = vcolors[i]
+                    up_peak = verts2d[i]
+                elif verts2d[i][1] == ymin:
+                    lower_color = vcolors[i]
+                    down_peak = verts2d[i]
+            for y in range(ymin, ymax + 1):
+                img[y][xmin] = interpol.interpolate_color(down_peak, up_peak, [xmin, y], lower_color, upper_color)
 
-        # # if the triangle has an upper horizontal edge
-        # elif len(activ_peaks_max) == 2:
-        #     activ_peaks_max.sort(key=lambda ap: ap[0])
-        #     for i in range(3):
-        #         if verts2d[i][1] == ymin:
-        #             lower_point = verts2d[i]
-        #             lower_color = vcolors[i]
-        #         elif verts2d[i][0] == activ_peaks_max[0][0]:
-        #             left_color = vcolors[i]
-        #         elif verts2d[i][0] == activ_peaks_max[1][0]:
-        #             right_color = vcolors[i]
-        #     left_slope = (activ_peaks_max[0][0] - lower_point[0]) / (activ_peaks_max[0][1] - lower_point[1])
-        #     right_slope = (activ_peaks_max[1][0] - lower_point[0]) / (activ_peaks_max[1][1] - lower_point[1])
-        #     activ_peaks_min.append(activ_peaks_min[0])
-        #     for y in range(ymin, ymax + 1):
-        #         # first interpolation
-        #         left_side_color = interpol.interpolate_color(ymin, ymax, y, lower_color, left_color)
-        #         right_side_color = interpol.interpolate_color(ymin, ymax, y, lower_color, right_color)
-        #         left_x = int(activ_peaks_min[0][0])
-        #         right_x = int(activ_peaks_min[1][0])
-        #         for x in range(left_x, right_x + 1):
-        #             # second interpolation
-        #             Y[y][x] = interpol.interpolate_color(left_x, right_x, x, left_side_color, right_side_color)
-        #         new_left_x = round((y + 1 - ymin) * left_slope)
-        #         new_right_x = round((y + 1 - ymin) * right_slope)
-        #         activ_peaks_min[0] = [new_left_x, y + 1]
-        #         activ_peaks_min[1] = [new_right_x, y + 1]
+        # if the triangle has a lower horizontal edge
+        elif len(activ_peaks) == 2:
+            # sort to left and right lower peaks
+            activ_peaks.sort(key=lambda ap: ap[0])
+            # compute the 2 slopes of the acmes (inverse slopes to get rid of division by zero)
+            left_slope = (peaks_y_max[0][0] - activ_peaks[0][0])/(peaks_y_max[0][1] - activ_peaks[0][1])
+            right_slope = (activ_peaks[1][0] - peaks_y_max[0][0])/(activ_peaks[1][1] - peaks_y_max[0][1])
+            # find the right color for the right peak
+            for i in range(3):
+                if (verts2d[i][0] == activ_peaks[0][0]) and (verts2d[i][1] == ymin):
+                    left_color = vcolors[i]
+                elif (verts2d[i][0] == activ_peaks[1][0]) and (verts2d[i][1] == ymin):
+                    right_color = vcolors[i]
+                else:
+                    upper_color = vcolors[i]
+            # paint for each point
+            xsmall = xmin
+            xbig = xmax
+            for y in range(ymin, ymax + 1):
+                color1 = interpol.interpolate_color(activ_peaks[0], peaks_y_max[0], [xsmall, y], left_color, upper_color)
+                color2 = interpol.interpolate_color(activ_peaks[1], peaks_y_max[0], [xbig, y], right_color, upper_color)
+                for x in range(int(xsmall), int(xbig + 1)):
+                    img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
+                xsmall = xsmall + left_slope
+                xbig = xbig + right_slope
 
-        # # if the triangle is just a triangle
-        # else:
-        #     # if the middle point is from the left side
-        #     if middle_peak[0] == xmin:
-        #         slope_left_1 = (xmin - activ_peaks_min[0][0]) / (middle_peak[1] - ymin)
-        #         slope_left_2 = (activ_peaks_max[0][0] - xmin) / (ymax - middle_peak[1])
-        #         slope_right = (activ_peaks_max[0][0] - activ_peaks_min[0][0]) / (ymax - ymin)
-        #         # get the colors
-        #         for i in range(3):
-        #             if verts2d[i][1] == ymax:
-        #                 upper_color = vcolors[i]
-        #             elif verts2d[i][1] == ymin:
-        #                 lower_color = vcolors[i]
-        #             elif verts2d[i][1] == middle_peak[1]:
-        #                 middle_color = vcolors[i]
-        #         # the list of the first scan line
-        #         activ_peaks_min.append(activ_peaks_min[0])
-        #         for y in range(ymin, int(middle_peak[1])):
-        #             # first interpolation
-        #             left_side_color = interpol.interpolate_color(ymin, middle_peak[1], y, lower_color, middle_color)
-        #             right_side_color = interpol.interpolate_color(ymin, ymax, y, lower_color, upper_color)
-        #             left_x = int(activ_peaks_min[0][0])
-        #             right_x = int(activ_peaks_min[1][0])
-        #             for x in range(left_x, right_x + 1):
-        #                 # second interpolation
-        #                 Y[y][x] = interpol.interpolate_color(left_x, right_x, x, left_side_color, right_side_color)
-        #             new_x_left = round((y + 1 - ymin) * slope_left_1)
-        #             new_x_right = round((y + 1 - ymin) * slope_right)
-        #             activ_peaks_min[0] = [new_x_left, y + 1]
-        #             activ_peaks_min[1] = [new_x_right, y + 1]
-        #         for y in range(int(middle_peak[1]), ymax + 1):
-        #             # first interpolation
-        #             left_side_color = interpol.interpolate_color(middle_peak[1], ymax, y, middle_color, upper_color)
-        #             right_side_color = interpol.interpolate_color(ymin, ymax, y, lower_color, upper_color)
-        #             left_x = activ_peaks_min[0][0]
-        #             right_x = activ_peaks_min[1][0]
-        #             for x in range(left_x, right_x + 1):
-        #                 # second interpolation
-        #                 Y[y][x] = interpol.interpolate_color(left_x, right_x, x, left_side_color, right_side_color)
-        #             new_x_left = round((y + 1 - ymin) * slope_left_2)
-        #             new_x_right = round((y + 1 - ymin) * slope_right)
-        #             activ_peaks_min[0] = [new_x_left, y + 1]
-        #             activ_peaks_min[1] = [new_x_right, y + 1]
+        # if the triangle has an upper horizontal edge
+        elif len(peaks_y_max) == 2:
+            # sort to left and right lower peaks
+            peaks_y_max.sort(key=lambda ap: ap[0])
+            # compute the 2 slopes of the acmes (inverse slopes to get rid of division by zero)
+            left_slope = (peaks_y_max[0][0] - activ_peaks[0][0])/(peaks_y_max[0][1] - activ_peaks[0][1])
+            right_slope = (activ_peaks[0][0] - peaks_y_max[1][0])/(activ_peaks[0][1] - peaks_y_max[1][1])
+            # find the right color for the right peak
+            for i in range(3):
+                if (verts2d[i][0] == peaks_y_max[0][0]) and (verts2d[i][1] == ymax):
+                    left_color = vcolors[i]
+                elif (verts2d[i][0] == peaks_y_max[1][0]) and (verts2d[i][1] == ymax):
+                    right_color = vcolors[i]
+                else:
+                    down_color = vcolors[i]
+                    xsmall = verts2d[i][0]
+            # paint for each point
+            xbig = xsmall
+            for y in range(ymin, ymax + 1):
+                color1 = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], [xsmall, y], left_color, down_color)
+                color2 = interpol.interpolate_color(peaks_y_max[1], activ_peaks[0], [xbig, y], right_color, down_color)
+                for x in range(int(xsmall), int(xbig + 1)):
+                    img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
+                xsmall = xsmall + left_slope
+                xbig = xbig + right_slope
 
-        #     # if the middle point is from the right side
-        #     if middle_peak[0] == xmax:
-        #         slope_right_1 = (middle_peak[0] - activ_peaks_min[0][0]) / (middle_peak[1] - ymin)
-        #         slope_right_2 = (activ_peaks_max[0][0] - middle_peak[0]) / (ymax - middle_peak[1])
-        #         slope_left = (activ_peaks_max[0][0] - activ_peaks_min[0][0]) / (ymax - ymin)
-        #         # get the colors
-        #         for i in range(3):
-        #             if verts2d[i][1] == ymax:
-        #                 upper_color = vcolors[i]
-        #             elif verts2d[i][1] == ymin:
-        #                 lower_color = vcolors[i]
-        #             elif verts2d[i][1] == middle_peak[1]:
-        #                 middle_color = vcolors[i]
-        #         # the list of the first scan line
-        #         activ_peaks_min.append(activ_peaks_min[0])
-        #         # scan
-        #         for y in range(ymin, int(middle_peak[1])):
-        #             # first interpolation
-        #             left_side_color = interpol.interpolate_color(ymin, ymax, y, lower_color, upper_color)
-        #             right_side_color = interpol.interpolate_color(ymin, middle_peak[1], y, lower_color, middle_color)
-        #             left_x = int(activ_peaks_min[0][0])
-        #             right_x = int(activ_peaks_min[1][0])
-        #             for x in range(left_x, right_x + 1):
-        #                 # second interpolation
-        #                 Y[y][x] = interpol.interpolate_color(left_x, right_x, x, left_side_color, right_side_color)
-        #             new_x_left = round((y + 1 - ymin) * slope_right_1)
-        #             new_x_right = round((y + 1 - ymin) * slope_left)
-        #             activ_peaks_min[0] = [new_x_left, y + 1]
-        #             activ_peaks_min[1] = [new_x_right, y + 1]
-        #         for y in range(int(middle_peak[1]), ymax + 1):
-        #             # first interpolation
-        #             left_side_color = interpol.interpolate_color(ymin, ymax, y, lower_color, upper_color)
-        #             right_side_color = interpol.interpolate_color(middle_peak[1], ymax, y, middle_color, upper_color)
-        #             left_x = activ_peaks_min[0][0]
-        #             right_x = activ_peaks_min[1][0]
-        #             for x in range(left_x, right_x + 1):
-        #                 # second interpolation
-        #                 Y[y][x] = interpol.interpolate_color(left_x, right_x, x, left_side_color, right_side_color)
-        #             new_x_left = round((y + 1 - ymin) * slope_right_2)
-        #             new_x_right = round((y + 1 - ymin) * slope_left)
-        #             activ_peaks_min[0] = [new_x_left, y + 1]
-        #             activ_peaks_min[1] = [new_x_right, y + 1]
+        # if the triangle is just a triangle
+        else:
+            a = 1
 
     return img

@@ -12,10 +12,6 @@ def interpolate_color(x1, x2, x, c1: np.array, c2: np.array):
     """
     diff1 = abs(x2[0] - x1[0])
     diff2 = abs(x2[1] - x1[1])
-    print("diff1")
-    print(diff1)
-    print("diff2")
-    print(diff2)
     # if the two points are the same(x1 == x2)
     if (diff1 == 0) and (diff2 == 0):
         value = 0.5 * c1 + 0.5 * c2
