@@ -99,8 +99,12 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
         # split it in two triangles and call the shade_triangle (itself)
         # note: we give the same color to each three peaks now because the mean value of the three colors will be the same color again
         else:
-            slope = (ymax-ymin)/(peaks_y_max[0][0]-activ_peaks[0][0])
-            x_new = peaks_y_max[0][0] + (middle_peak[1] - ymax)/slope
+            y_diff = peaks_y_max[0][0]-activ_peaks[0][0]
+            if y_diff == 0:
+                x_new = peaks_y_max[0][0]
+            else:
+                slope = (ymax-ymin)/y_diff
+                x_new = peaks_y_max[0][0] + (middle_peak[1] - ymax)/slope
             colors = np.array([color, color, color])
             new_peak = [x_new, middle_peak[1]]
             triangle1 = np.array([peaks_y_max[0], middle_peak, new_peak])
