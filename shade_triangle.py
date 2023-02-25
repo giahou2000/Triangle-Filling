@@ -47,8 +47,6 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             peaks_y_max.append(verts2d[i])
         else:
             middle_peak = verts2d[i]
-            middle_color = vcolors[i]
-
 
     # _____*****if we are using flat method*****_____
     if shade_t == 'flat':
@@ -220,6 +218,7 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
         else:
             # compute the x at which there will be the cut
             y_diff = peaks_y_max[0][0] - activ_peaks[0][0]
+            slope = 0
             if y_diff == 0:
                 x_new = peaks_y_max[0][0]
             else:
@@ -228,20 +227,62 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             # the new cut peak
             new_peak = [x_new, middle_peak[1]]
             # create the new triangles after the cut
-            triangle1 = np.array([peaks_y_max[0], middle_peak, new_peak])
-            triangle2 = np.array([middle_peak, new_peak, activ_peaks[0]])
             # compute the colors
             for i in range(3):
                 if (verts2d[i][1] == ymax):
                     upper_color = vcolors[i]
                 elif (verts2d[i][1] == ymin):
                     down_color = vcolors[i]
-            new_peak_color = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], new_peak, upper_color, down_color)
-            colors1 = np.array([upper_color, middle_color, new_peak_color])
-            colors2 = np.array([middle_color, new_peak_color, down_color])
-            # fill first triangle
-            shade_triangle(img, triangle1, colors1, shade_t)
-            # fill second triangle
-            shade_triangle(img, triangle2, colors2, shade_t)
+                else:
+                    middle_color = vcolors[i]
+
+            # if middle peak is from the left side
+            if (middle_peak[0] == xmin):
+                xsmall = activ_peaks[0][0]
+                xbig = xsmall
+                left_slope_1 = (middle_peak[0] - activ_peaks[0][0])/(middle_peak[1] - activ_peaks[0][1])
+                left_slope_2 = (peaks_y_max[0][0] - middle_peak[0])/(peaks_y_max[0][1] - middle_peak[1])
+                for y in range(ymin, int(middle_peak[1]) + 1):
+                    color1 = interpol.interpolate_color(middle_peak, activ_peaks[0], [xsmall, y], middle_color, down_color)
+                    color2 = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], [xbig, y], upper_color, down_color)
+                    for x in range(int(xsmall), int(xbig + 1)):
+                        img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
+                    xsmall = xsmall + left_slope_1
+                    if slope != 0:
+                        xbig = xbig + (1/slope)
+                xsmall = middle_peak[0]
+                xbig = x_new
+                for y in range(int(middle_peak[1]) + 1, ymax + 1):
+                    color1 = interpol.interpolate_color(middle_peak, peaks_y_max[0], [xsmall, y], middle_color, upper_color)
+                    color2 = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], [xbig, y], upper_color, down_color)
+                    for x in range(int(xsmall), int(xbig + 1)):
+                        img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
+                    xsmall = xsmall + left_slope_2
+                    if slope != 0:
+                        xbig = xbig + (1/slope)
+            # if middle peak is from the right side
+            else:
+                xsmall = activ_peaks[0][0]
+                xbig = xsmall
+                right_slope_1 = (middle_peak[0] - activ_peaks[0][0])/(middle_peak[1] - activ_peaks[0][1])
+                right_slope_2 = (peaks_y_max[0][0] - middle_peak[0])/(peaks_y_max[0][1] - middle_peak[1])
+                for y in range(ymin, int(middle_peak[1]) + 1):
+                    color2 = interpol.interpolate_color(middle_peak, activ_peaks[0], [xbig, y], middle_color, down_color)
+                    color1 = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], [xsmall, y], upper_color, down_color)
+                    for x in range(int(xsmall), int(xbig + 1)):
+                        img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2) # def
+                    xbig = xbig + right_slope_1
+                    if slope != 0:
+                        xsmall = xsmall + (1/slope)
+                xbig = middle_peak[0]
+                xsmall = x_new
+                for y in range(int(middle_peak[1]) + 1, ymax + 1):
+                    color2 = interpol.interpolate_color(middle_peak, peaks_y_max[0], [xbig, y], middle_color, upper_color)
+                    color1 = interpol.interpolate_color(peaks_y_max[0], activ_peaks[0], [xsmall, y], upper_color, down_color)
+                    for x in range(int(xsmall), int(xbig + 1)):
+                        img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
+                    xbig = xbig + right_slope_2
+                    if slope != 0:
+                        xsmall = xsmall + (1/slope)
 
     return img
