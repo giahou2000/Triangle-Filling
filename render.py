@@ -29,6 +29,5 @@ def render(verts2d, faces, vcolors, depth, shade_t):
         verts = [verts2d[tri_face[0]], verts2d[tri_face[1]], verts2d[tri_face[2]]]
         color = [vcolors[tri_face[0]], vcolors[tri_face[1]], vcolors[tri_face[2]]]
         img = shade.shade_triangle(img, verts, color, shade_t)
-
     # return the RGB values
     return img
