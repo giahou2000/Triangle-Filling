@@ -140,16 +140,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 elif verts2d[i][0] == xmax:
                     right_color = vcolors[i]
                     right_peak = verts2d[i]
-                else:
-                    middle_color = vcolors[i]
-                    middle_peak = verts2d[i]
-            img[ymin][xmin] = left_color
-            for x in range(xmin + 1, middle_peak[0]):
-                img[ymin][x] = interpol.interpolate_color(left_peak, middle_peak, [x, ymin], left_color, middle_color)
-            img[ymin][middle_peak[0]] = middle_color
-            for x in range(middle_peak[0] + 1, xmax):
-                img[ymin][x] = interpol.interpolate_color(middle_peak, right_peak, [x, ymin], middle_color, right_color)
-            img[ymin][xmax] = right_color
+            for x in range(xmin, xmax + 1):
+                img[ymin][x] = interpol.interpolate_color(left_peak, right_peak, [x, ymin], left_color, right_color)
 
         # if the triangle is a vertical line
         elif xmin == xmax:
@@ -160,22 +152,14 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 elif verts2d[i][1] == ymin:
                     lower_color = vcolors[i]
                     down_peak = verts2d[i]
-                else:
-                    middle_peak = verts2d[i]
-                    middle_color = vcolors[i]
-            img[ymin][xmin] = left_color
-            for y in range(ymin + 1, middle_peak[1]):
-                img[y][xmin] = interpol.interpolate_color(down_peak, middle_peak, [xmin, y], lower_color, middle_color)
-            img[middle_peak[1]][xmin] = middle_color
-            for y in range(middle_peak[1] + 1, ymax):
-                img[y][xmin] = interpol.interpolate_color(middle_peak, up_peak, [xmin, y], middle_color, upper_color)
-            img[ymax][xmin] = right_color
+            for y in range(ymin, ymax + 1):
+                img[y][xmin] = interpol.interpolate_color(down_peak, up_peak, [xmin, y], lower_color, upper_color)
 
         # if the triangle has a lower horizontal edge
         elif len(activ_peaks) == 2:
             # sort to left and right lower peaks
             activ_peaks.sort(key=lambda ap: ap[0])
-            # compute the 2 slopes of the acmes (inverse slopes to get rid of division by zero)
+            # compute the 2 slopes of the edges (inverse slopes to get rid of division by zero and simplify things)
             left_slope = (peaks_y_max[0][0] - activ_peaks[0][0])/(peaks_y_max[0][1] - activ_peaks[0][1])
             right_slope = (activ_peaks[1][0] - peaks_y_max[0][0])/(activ_peaks[1][1] - peaks_y_max[0][1])
             # find the right color for the right peak
