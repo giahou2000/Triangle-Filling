@@ -126,27 +126,30 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
 
     # _____*****if we are using gouraud method*****_____
     elif shade_t == 'gouraud':
-        # flat coloring for certain types of triangles
-        color = np.zeros(3)
-        for i in range(3):
-            i_color_palette = [vcolors[0][i], vcolors[1][i], vcolors[2][i]]
-            color[i] = statistics.mean(i_color_palette)
-            color = np.array(color)
 
         # if the triangle is a single point
         if (xmin == xmax) and (ymin == ymax):
-            img[ymin][xmin] = color
+            img[ymin][xmin] = vcolors[0]
 
         # if the triangle is a horizontal line
         elif ymin == ymax:
             for i in range(3):
-                if activ_peaks[i][0] == xmin:
+                if verts2d[i][0] == xmin:
                     left_color = vcolors[i]
-                elif activ_peaks[i][0] == xmax:
+                    left_peak = verts2d[i]
+                elif verts2d[i][0] == xmax:
                     right_color = vcolors[i]
-            activ_peaks.sort(key=lambda ap: ap[0])
-            for x in range(xmin, xmax + 1):
-                img[ymin][x] = interpol.interpolate_color(activ_peaks[0], activ_peaks[2], [x, ymin], left_color, right_color)
+                    right_peak = verts2d[i]
+                else:
+                    middle_color = vcolors[i]
+                    middle_peak = verts2d[i]
+            img[ymin][xmin] = left_color
+            for x in range(xmin + 1, middle_peak[0]):
+                img[ymin][x] = interpol.interpolate_color(left_peak, middle_peak, [x, ymin], left_color, middle_color)
+            img[ymin][middle_peak[0]] = middle_color
+            for x in range(middle_peak[0] + 1, xmax):
+                img[ymin][x] = interpol.interpolate_color(middle_peak, right_peak, [x, ymin], middle_color, right_color)
+            img[ymin][xmax] = right_color
 
         # if the triangle is a vertical line
         elif xmin == xmax:
@@ -157,8 +160,16 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 elif verts2d[i][1] == ymin:
                     lower_color = vcolors[i]
                     down_peak = verts2d[i]
-            for y in range(ymin, ymax + 1):
-                img[y][xmin] = interpol.interpolate_color(down_peak, up_peak, [xmin, y], lower_color, upper_color)
+                else:
+                    middle_peak = verts2d[i]
+                    middle_color = vcolors[i]
+            img[ymin][xmin] = left_color
+            for y in range(ymin + 1, middle_peak[1]):
+                img[y][xmin] = interpol.interpolate_color(down_peak, middle_peak, [xmin, y], lower_color, middle_color)
+            img[middle_peak[1]][xmin] = middle_color
+            for y in range(middle_peak[1] + 1, ymax):
+                img[y][xmin] = interpol.interpolate_color(middle_peak, up_peak, [xmin, y], middle_color, upper_color)
+            img[ymax][xmin] = right_color
 
         # if the triangle has a lower horizontal edge
         elif len(activ_peaks) == 2:
