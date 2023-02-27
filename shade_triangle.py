@@ -82,8 +82,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
                     img[y][x] = color
-                xmin = xmin + left_slope
-                xmax = xmax + right_slope
+                xmin = xmin + right_slope
+                xmax = xmax + left_slope
 
         # if the triangle has an upper horizontal edge
         elif len(peaks_y_max) == 2:
@@ -96,8 +96,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
                     img[y][x] = color
-                xmin = xmin + left_slope
-                xmax = xmax + right_slope
+                xmin = xmin + right_slope
+                xmax = xmax + left_slope
 
         # if the triangle is just any other triangle
         # split it in two triangles and call the shade_triangle (itself)
@@ -178,8 +178,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 color2 = interpol.interpolate_color(activ_peaks[1], peaks_y_max[0], [xbig, y], right_color, upper_color)
                 for x in range(int(xsmall), int(xbig + 1)):
                     img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
-                xsmall = xsmall + left_slope
-                xbig = xbig + right_slope
+                xsmall = xsmall + right_slope
+                xbig = xbig + left_slope
 
         # if the triangle has an upper horizontal edge
         elif len(peaks_y_max) == 2:
@@ -204,8 +204,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 color2 = interpol.interpolate_color(peaks_y_max[1], activ_peaks[0], [xbig, y], right_color, down_color)
                 for x in range(int(xsmall), int(xbig + 1)):
                     img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
-                xsmall = xsmall + left_slope
-                xbig = xbig + right_slope
+                xsmall = xsmall + right_slope
+                xbig = xbig + left_slope
 
         # if the triangle is just any other triangle
         # split it in two triangles and call the shade_triangle (itself)
