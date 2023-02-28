@@ -11,6 +11,6 @@ depth = data[()]['depth']
 
 # render the image
 image = render.render(verts2d, faces, vcolors, depth, 'gouraud')
-matplotlib.pyplot.imshow(image)
+matplotlib.pyplot.imshow(image, origin='lower')
 matplotlib.pyplot.savefig('gouraud.png')
 matplotlib.pyplot.show()
