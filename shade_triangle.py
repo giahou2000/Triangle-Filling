@@ -82,8 +82,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
                     img[y][x] = color
-                xmin = xmin + right_slope
-                xmax = xmax + left_slope
+                xmin = (y + 1 - ymin) * left_slope + activ_peaks[0][0]
+                xmax = (y + 1 - ymin) * right_slope + activ_peaks[1][0]
 
         # if the triangle has an upper horizontal edge
         elif len(peaks_y_max) == 2:
@@ -96,8 +96,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             for y in range(ymin, ymax + 1):
                 for x in range(int(xmin), int(xmax + 1)):
                     img[y][x] = color
-                xmin = xmin + right_slope
-                xmax = xmax + left_slope
+                xmin = (y + 1 - ymax) * left_slope + peaks_y_max[0][0]
+                xmax = (y + 1 - ymax) * right_slope + peaks_y_max[1][0]
 
         # if the triangle is just any other triangle
         # split it in two triangles and call the shade_triangle (itself)
