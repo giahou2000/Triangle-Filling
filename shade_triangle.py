@@ -63,11 +63,13 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
 
         # if the triangle is a horizontal line
         elif ymin == ymax:
+            a = 1
             for x in range(xmin, xmax+1):
                 img[ymin][x] = color
 
         # if the triangle is a vertical line
         elif xmin == xmax:
+            a = 1
             for y in range(ymin, ymax+1):
                 img[y][xmin] = color
 
@@ -79,11 +81,13 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             left_slope = (peaks_y_max[0][0] - activ_peaks[0][0])/(ymax - ymin)
             right_slope = (activ_peaks[1][0] - peaks_y_max[0][0])/(ymin - ymax)
             # paint for each point
+            xsmall = activ_peaks[0][0]
+            xbig = activ_peaks[1][0]
             for y in range(ymin, ymax + 1):
-                for x in range(int(xmin), int(xmax + 1)):
+                for x in range(int(xsmall), int(xbig + 1)):
                     img[y][x] = color
-                xmin = (y + 1 - ymin) * left_slope + activ_peaks[0][0]
-                xmax = (y + 1 - ymin) * right_slope + activ_peaks[1][0]
+                xsmall = (y + 1 - ymin) * left_slope + activ_peaks[0][0]
+                xbig = (y + 1 - ymin) * right_slope + activ_peaks[1][0]
 
         # if the triangle has an upper horizontal edge
         elif len(peaks_y_max) == 2:
@@ -93,11 +97,13 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
             left_slope = (activ_peaks[0][0] - peaks_y_max[0][0])/(ymin - ymax)
             right_slope = (peaks_y_max[1][0] - activ_peaks[0][0])/(ymax - ymin)
             # paint for each point
+            xsmall = activ_peaks[0][0]
+            xbig = activ_peaks[0][0]
             for y in range(ymin, ymax + 1):
-                for x in range(int(xmin), int(xmax + 1)):
+                for x in range(int(xsmall), int(xbig + 1)):
                     img[y][x] = color
-                xmin = (y + 1 - ymax) * left_slope + peaks_y_max[0][0]
-                xmax = (y + 1 - ymax) * right_slope + peaks_y_max[1][0]
+                xsmall = (y + 1 - ymax) * left_slope + peaks_y_max[0][0]
+                xbig = (y + 1 - ymax) * right_slope + peaks_y_max[1][0]
 
         # if the triangle is just any other triangle
         # split it in two triangles and call the shade_triangle (itself)
@@ -178,8 +184,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 color2 = interpol.interpolate_color(activ_peaks[1], peaks_y_max[0], [xbig, y], right_color, upper_color)
                 for x in range(int(xsmall), int(xbig + 1)):
                     img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
-                xsmall = xsmall + right_slope
-                xbig = xbig + left_slope
+                xsmall = (y + 1 - ymin) * left_slope + activ_peaks[0][0]
+                xbig = (y + 1 - ymin) * right_slope + activ_peaks[1][0]
 
         # if the triangle has an upper horizontal edge
         elif len(peaks_y_max) == 2:
@@ -204,8 +210,8 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
                 color2 = interpol.interpolate_color(peaks_y_max[1], activ_peaks[0], [xbig, y], right_color, down_color)
                 for x in range(int(xsmall), int(xbig + 1)):
                     img[y][x] = interpol.interpolate_color([xsmall, y], [xbig, y], [x, y], color1, color2)
-                xsmall = xsmall + right_slope
-                xbig = xbig + left_slope
+                xsmall = (y + 1 - ymax) * left_slope + peaks_y_max[0][0]
+                xbig = (y + 1 - ymax) * right_slope + peaks_y_max[1][0]
 
         # if the triangle is just any other triangle
         # split it in two triangles and call the shade_triangle (itself)
