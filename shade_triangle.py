@@ -10,6 +10,9 @@ def shade_triangle(img, verts2d, vcolors, shade_t):
     vcolors: the RGB colors of the 3 peaks
     shade_t: the painting method (flat or gouraud)
     """
+    # the value to be returned - the canvas
+
+    global right_color
 
     # find the minimums and maximums for each acme
     # we define acmes by their number (0, 1, 2)
